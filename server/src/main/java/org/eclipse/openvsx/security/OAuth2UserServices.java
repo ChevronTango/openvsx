@@ -9,12 +9,17 @@
  ********************************************************************************/
 package org.eclipse.openvsx.security;
 
-import static org.eclipse.openvsx.security.CodedAuthException.*;
+import static org.eclipse.openvsx.security.CodedAuthException.ECLIPSE_MISMATCH_GITHUB_ID;
+import static org.eclipse.openvsx.security.CodedAuthException.ECLIPSE_MISSING_GITHUB_ID;
+import static org.eclipse.openvsx.security.CodedAuthException.INVALID_GITHUB_USER;
+import static org.eclipse.openvsx.security.CodedAuthException.INVALID_GITLAB_USER;
+import static org.eclipse.openvsx.security.CodedAuthException.INVALID_KEYCLOAK_USER;
+import static org.eclipse.openvsx.security.CodedAuthException.INVALID_OIDC_USER;
+import static org.eclipse.openvsx.security.CodedAuthException.NEED_MAIN_LOGIN;
+import static org.eclipse.openvsx.security.CodedAuthException.UNSUPPORTED_REGISTRATION;
 
 import java.util.Collection;
 import java.util.Collections;
-
-import jakarta.persistence.EntityManager;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.openvsx.UserService;
@@ -38,6 +43,8 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+
+import jakarta.persistence.EntityManager;
 
 @Service
 public class OAuth2UserServices {
@@ -102,13 +109,45 @@ public class OAuth2UserServices {
     public IdPrincipal loadUser(OAuth2UserRequest userRequest) {
         var registrationId = userRequest.getClientRegistration().getRegistrationId();
         switch (registrationId) {
+            case "keycloak":
+                return loadKeycloakUser(userRequest);
+            case "gitlab":
+                return loadGitLabUser(userRequest);
             case "github":
                 return loadGitHubUser(userRequest);
             case "eclipse":
                 return loadEclipseUser(userRequest);
+            case "oidc":
+                return loadOidcUser(userRequest);
             default:
                 throw new CodedAuthException("Unsupported registration: " + registrationId, UNSUPPORTED_REGISTRATION);
         }
+    }
+
+    private IdPrincipal loadKeycloakUser(OAuth2UserRequest userRequest) {
+        var authUser = delegate.loadUser(userRequest);
+        String loginName = authUser.getAttribute("login");
+        if (StringUtils.isEmpty(loginName))
+            throw new CodedAuthException("Invalid login: missing 'login' field.", INVALID_KEYCLOAK_USER);
+        var userData = repositories.findUserByLoginName("keycloak", loginName);
+        if (userData == null)
+            userData = users.registerNewUser(authUser);
+        else
+            users.updateExistingUser(userData, authUser);
+        return new IdPrincipal(userData.getId(), authUser.getName(), getAuthorities(userData));
+    }
+
+    private IdPrincipal loadGitLabUser(OAuth2UserRequest userRequest) {
+        var authUser = delegate.loadUser(userRequest);
+        String loginName = authUser.getAttribute("login");
+        if (StringUtils.isEmpty(loginName))
+            throw new CodedAuthException("Invalid login: missing 'login' field.", INVALID_GITLAB_USER);
+        var userData = repositories.findUserByLoginName("gitlab", loginName);
+        if (userData == null)
+            userData = users.registerNewUser(authUser);
+        else
+            users.updateExistingUser(userData, authUser);
+        return new IdPrincipal(userData.getId(), authUser.getName(), getAuthorities(userData));
     }
 
     private IdPrincipal loadGitHubUser(OAuth2UserRequest userRequest) {
@@ -155,6 +194,19 @@ public class OAuth2UserServices {
         } catch (ErrorResultException exc) {
             throw new AuthenticationServiceException(exc.getMessage(), exc);
         }
+    }
+
+    private IdPrincipal loadOidcUser(OAuth2UserRequest userRequest) {
+        var authUser = delegate.loadUser(userRequest);
+        String loginName = authUser.getAttribute("login");
+        if (StringUtils.isEmpty(loginName))
+            throw new CodedAuthException("Invalid login: missing 'login' field.", INVALID_OIDC_USER);
+        var userData = repositories.findUserByLoginName("oidc", loginName);
+        if (userData == null)
+            userData = users.registerNewUser(authUser);
+        else
+            users.updateExistingUser(userData, authUser);
+        return new IdPrincipal(userData.getId(), authUser.getName(), getAuthorities(userData));
     }
 
     private Collection<GrantedAuthority> getAuthorities(UserData userData) {

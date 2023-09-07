@@ -13,9 +13,15 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
-import jakarta.persistence.*;
-
 import org.eclipse.openvsx.json.UserJson;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
 
 @Entity
 public class UserData implements Serializable {
@@ -59,6 +65,18 @@ public class UserData implements Serializable {
     @Column(length = 4096)
     @Convert(converter = AuthTokenConverter.class)
     AuthToken githubToken;
+
+    @Column(length = 4096)
+    @Convert(converter = AuthTokenConverter.class)
+    AuthToken gitlabToken;
+
+    @Column(length = 4096)
+    @Convert(converter = AuthTokenConverter.class)
+    AuthToken keycloakToken;
+
+    @Column(length = 4096)
+    @Convert(converter = AuthTokenConverter.class)
+    AuthToken oidcToken;
 
     @Column(length = 4096)
     @Convert(converter = AuthTokenConverter.class)
@@ -164,6 +182,30 @@ public class UserData implements Serializable {
 
     public void setGithubToken(AuthToken githubToken) {
         this.githubToken = githubToken;
+    }
+
+    public AuthToken getGitLabToken() {
+        return gitlabToken;
+    }
+
+    public void setGitLabToken(AuthToken gitlabToken) {
+        this.gitlabToken = gitlabToken;
+    }
+
+    public AuthToken getKeycloakToken() {
+        return keycloakToken;
+    }
+
+    public void setKeycloakToken(AuthToken keycloakToken) {
+        this.keycloakToken = keycloakToken;
+    }
+
+    public AuthToken getOidcToken() {
+        return oidcToken;
+    }
+
+    public void setOidcToken(AuthToken oidcToken) {
+        this.oidcToken = oidcToken;
     }
 
     public AuthToken getEclipseToken() {

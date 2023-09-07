@@ -12,11 +12,6 @@ package org.eclipse.openvsx.security;
 import java.time.Instant;
 import java.util.Arrays;
 
-import jakarta.persistence.EntityManager;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.eclipse.openvsx.entities.AuthToken;
 import org.eclipse.openvsx.entities.UserData;
 import org.json.simple.JsonObject;
@@ -35,6 +30,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.persistence.EntityManager;
 
 @Component
 public class TokenService {
@@ -58,6 +58,30 @@ public class TokenService {
         }
     
         switch (registrationId) {
+            case "keycloak": {
+                if (accessToken == null) {
+                    return updateKeycloakToken(userData, null);
+                }
+                var token = new AuthToken();
+                token.accessToken = accessToken.getTokenValue();
+                token.scopes = accessToken.getScopes();
+                token.issuedAt = accessToken.getIssuedAt();
+                token.expiresAt = accessToken.getExpiresAt();
+                return updateKeycloakToken(userData, token);
+            }
+            
+            case "gitlab": {
+                if (accessToken == null) {
+                    return updateGitLabToken(userData, null);
+                }
+                var token = new AuthToken();
+                token.accessToken = accessToken.getTokenValue();
+                token.scopes = accessToken.getScopes();
+                token.issuedAt = accessToken.getIssuedAt();
+                token.expiresAt = accessToken.getExpiresAt();
+                return updateGitLabToken(userData, token);
+            }
+            
             case "github": {
                 if (accessToken == null) {
                     return updateGitHubToken(userData, null);
@@ -97,6 +121,18 @@ public class TokenService {
                 }
                 return updateEclipseToken(userData, token);
             }
+            
+            case "oidc": {
+                if (accessToken == null) {
+                    return updateOidcToken(userData, null);
+                }
+                var token = new AuthToken();
+                token.accessToken = accessToken.getTokenValue();
+                token.scopes = accessToken.getScopes();
+                token.issuedAt = accessToken.getIssuedAt();
+                token.expiresAt = accessToken.getExpiresAt();
+                return updateOidcToken(userData, token);
+            }
         }
         return null;
     }
@@ -104,6 +140,27 @@ public class TokenService {
     private AuthToken updateGitHubToken(UserData userData, AuthToken token) {
         return transactions.execute(status -> {
             userData.setGithubToken(token);
+            entityManager.merge(userData);
+            return token;
+        });
+    }
+    private AuthToken updateGitLabToken(UserData userData, AuthToken token) {
+        return transactions.execute(status -> {
+            userData.setGitLabToken(token);
+            entityManager.merge(userData);
+            return token;
+        });
+    }
+    private AuthToken updateKeycloakToken(UserData userData, AuthToken token) {
+        return transactions.execute(status -> {
+            userData.setKeycloakToken(token);
+            entityManager.merge(userData);
+            return token;
+        });
+    }
+    private AuthToken updateOidcToken(UserData userData, AuthToken token) {
+        return transactions.execute(status -> {
+            userData.setOidcToken(token);
             entityManager.merge(userData);
             return token;
         });
@@ -196,5 +253,4 @@ public class TokenService {
         }
         return null;
     }
-
 }

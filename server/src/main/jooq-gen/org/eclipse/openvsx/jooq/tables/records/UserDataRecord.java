@@ -188,6 +188,48 @@ public class UserDataRecord extends UpdatableRecordImpl<UserDataRecord> implemen
         return (String) get(11);
     }
 
+    /**
+     * Setter for <code>public.user_data.gitlab_token</code>.
+     */
+    public void setGitLabToken(String value) {
+        set(12, value);
+    }
+
+    /**
+     * Getter for <code>public.user_data.gitlab_token</code>.
+     */
+    public String getGitLabToken() {
+        return (String) get(12);
+    }
+
+    /**
+     * Setter for <code>public.user_data.keycloak_token</code>.
+     */
+    public void setKeycloakToken(String value) {
+        set(13, value);
+    }
+
+    /**
+     * Getter for <code>public.user_data.keycloak_token</code>.
+     */
+    public String getKeycloakToken() {
+        return (String) get(13);
+    }
+
+    /**
+     * Setter for <code>public.user_data.oidc_token</code>.
+     */
+    public void setOidcToken(String value) {
+        set(14, value);
+    }
+
+    /**
+     * Getter for <code>public.user_data.oidc_token</code>.
+     */
+    public String getOidcToken() {
+        return (String) get(14);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
